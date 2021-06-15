@@ -1,0 +1,12 @@
+SNOW - Snowfall
+WT01 - Fog, ice fog, or freezing fog (may include heavy fog)
+TMAX - Maximum temperature
+WT02 - Heavy fog or heaving freezing fog (not always distinguished from fog)
+WT03 - Thunder
+TAVG - Average Temperature.
+TMIN - Minimum temperature
+WT04 - Ice pellets, sleet, snow pellets, or small hail"
+PRCP - Precipitation
+WT06 - Glaze or rime
+WT08 - Smoke or haze
+SNWD - Snow depth
