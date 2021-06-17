@@ -4,15 +4,14 @@ DAG is a compilation and arrangement of tasks to be run on a monthly basis.
 from datetime import datetime, timedelta
 import os
 from airflow import DAG
-from airflow.operators.postgres_operator import *
+from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.dummy_operator import DummyOperator
 from helpers import SqlQueries
 from operators import S3ToRedshiftOperator, DataQualityOperator, DataAnalysisOperator
 
 default_args = {
-    'owner': 'nabeel',
-    'start_date': datetime(2019, 1, 1),
-    # 'end_date': datetime(2019, 7, 1),
+    'owner': 'Leo Arruda',
+    'start_date': datetime(2021, 1, 1),
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
@@ -24,7 +23,8 @@ dag = DAG('NYC_TLC_DAG',
           default_args=default_args,
           description='Load monthly data from S3 to Redshift for processing',
           schedule_interval='@monthly',
-          catchup=False
+          catchup=False,
+          tags=['Load', 'Dataset', 'Redshift']
           )
 
 t0 = PostgresOperator(
@@ -89,8 +89,8 @@ t1e = S3ToRedshiftOperator(
 t2 = DataQualityOperator(
     task_id='Staging_data_quality_checks',
     dag=dag,
-    redshift_conn_id="redshift",
-    tables=[
+    conn_id='redshift',
+    target_tables=[
         'taxi_zones',
         'stage_green',
         'stage_yellow',
@@ -139,8 +139,8 @@ t5b = PostgresOperator(
 t6 = DataQualityOperator(
     task_id='Model_data_quality_checks',
     dag=dag,
-    redshift_conn_id="redshift",
-    tables=[
+    conn_id="redshift",
+    target_tables=[
         'time',
         'taxi_rides'
     ]

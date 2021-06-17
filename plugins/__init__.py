@@ -6,28 +6,16 @@ import operators
 import helpers
 
 
-class CapstonePlugin(AirflowPlugin):
-    name = "capstone_plugin"
+# Defining the plugin class
+class UdacityPlugin(AirflowPlugin):
+    name = "udacity_capstone_plugin"
     operators = [
-        operators.RenderToS3Operator,
         operators.S3ToRedshiftOperator,
+        operators.DataQualityOperator,
+        operators.DataAnalysisOperator,
+        operators.RenderToS3Operator,
         operators.LoadFactDimOperator,
-        operators.DataQualityOperator
     ]
     helpers = [
-        helpers.staging_tables,
-        helpers.fact_dimension_tables,
-        helpers.immigration_table,
-        helpers.temperature_table,
-        helpers.airport_table,
-        helpers.demographics_table,
-        helpers.fact_dimension_insert,
-        helpers.dim_demographic_table,
-        helpers.dim_airport_table,
-        helpers.dim_visitor_table,
-        helpers.fact_city_data_table,
-        helpers.fact_city_table_insert,
-        helpers.dim_airport_table_insert,
-        helpers.dim_demographic_table_insert,
-        helpers.dim_visitor_table_insert
+        helpers.SqlQueries
     ]
