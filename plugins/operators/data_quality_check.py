@@ -5,16 +5,10 @@ import logging
 
 class DataQualityOperator(BaseOperator):
     """
-    Operator that runs data checks against the inserted data.
-    """
-
-
-class DataQualityOperator(BaseOperator):
-    """
     DataQualityOperator runs probing SQL queries against the redshift database and evaluates the response to confirm
     that data did in fact load into the queried table.
     """
-    ui_color = '#89DD09'
+    ui_color = '#09ded7'
 
     @apply_defaults
     def __init__(self,

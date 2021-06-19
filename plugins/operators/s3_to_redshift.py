@@ -1,107 +1,74 @@
-from airflow.contrib.hooks.aws_hook import AwsHook
-from airflow.hooks.postgres_hook import PostgresHook
+from typing import List, Optional, Union
+
 from airflow.models import BaseOperator
-from airflow.utils.decorators import apply_defaults
-import logging
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.amazon.aws.utils.redshift import build_credentials_block
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 class S3ToRedshiftOperator(BaseOperator):
-    """
-    S3ToRedshiftOperator controls the movement of csv trip data and json map data from AWS S3 to Redshift both manually
-    and automatically using the environment execution date.
-    """
-    ui_color = '#5496eb'
-    template_fields = ("s3_key",)
-    copy_sql = """
-        COPY public.{sink}
-        FROM '{source}'
-        REGION 'us-east-2'
-        ACCESS_KEY_ID '{id}'
-        SECRET_ACCESS_KEY '{secret}'
-        IGNOREHEADER 1
-        delimiter ','
-        IGNOREBLANKLINES
-        REMOVEQUOTES
-        EMPTYASNULL 
-;
-    """
-    copy_sql_time = """
-        COPY public.{sink}
-        FROM '{source}_{year}-{month}.csv'
-        REGION 'us-east-2'
-        ACCESS_KEY_ID '{id}'
-        SECRET_ACCESS_KEY '{secret}'
-        IGNOREHEADER 1
-        delimiter ','
-        IGNOREBLANKLINES
-        REMOVEQUOTES
-        EMPTYASNULL 
-;
-    """
-    copy_sql_JSON = """
-        COPY public.{sink}
-        FROM '{source}'
-        REGION 'us-east-2'
-        ACCESS_KEY_ID '{id}'
-        SECRET_ACCESS_KEY '{secret}'
-        FORMAT AS JSON '{jsonpath}'
-    """
-    @apply_defaults
-    def __init__(self,
-                 redshift_conn_id="",
-                 aws_credentials_id="",
-                 table="",
-                 s3_bucket="",
-                 s3_key="",
-                 jsonpath='',
-                 *args, **kwargs):
+    template_fields = ('s3_bucket', 's3_key', 'schema', 'table', 'column_list', 'copy_options')
+    template_ext = ()
+    ui_color = '#f0f2a0'
 
-        super(S3ToRedshiftOperator, self).__init__(*args, **kwargs)
+    def __init__(
+        self,
+        *,
+        schema: str,
+        table: str,
+        s3_bucket: str,
+        s3_key: str,
+        redshift_conn_id: str = 'redshift',
+        aws_conn_id: str = 'my_aws_credentials',
+        verify: Optional[Union[bool, str]] = None,
+        column_list: Optional[List[str]] = None,
+        copy_options: Optional[List] = None,
+        autocommit: bool = False,
+        truncate_table: bool = False,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.schema = schema
         self.table = table
-        self.redshift_conn_id = redshift_conn_id
-        self.aws_credentials_id = aws_credentials_id
         self.s3_bucket = s3_bucket
         self.s3_key = s3_key
-        self.jsonPath = jsonpath
-        self.execution_date = kwargs.get('execution_date')
+        self.redshift_conn_id = redshift_conn_id
+        self.aws_conn_id = aws_conn_id
+        self.verify = verify
+        self.column_list = column_list
+        self.copy_options = copy_options or []
+        self.autocommit = autocommit
+        self.truncate_table = truncate_table
 
-    def execute(self, context):
-        #         Connect to AWS and Redshift
-        self.log.info('StageToRedshiftOperator implementation')
-        aws_hook = AwsHook(self.aws_credentials_id)
-        credentials = aws_hook.get_credentials()
-        redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-        #         Remove existing data in staging table
-        self.log.info("Clearing data from destination Redshift table")
-        redshift.run("TRUNCATE TABLE {}".format(self.table))
-        #         Copy new data from S3 to Redshift
-        self.log.info("Copying data from S3 to Redshift")
-        rendered_key = self.s3_key.format(**context)
-        s3_path = "s3://{}/{}".format(self.s3_bucket, rendered_key)
+    def _build_copy_query(self, credentials_block: str, copy_options: str) -> str:
+        column_names = "(" + ", ".join(self.column_list) + ")" if self.column_list else ''
+        return f"""
+                    COPY {self.schema}.{self.table} {column_names}
+                    FROM 's3://{self.s3_bucket}/{self.s3_key}'
+                    with credentials
+                    '{credentials_block}'
+                    {copy_options};
+        """
 
-        if self.jsonPath is '':
-            if self.execution_date:
-                formatted_sql = S3ToRedshiftOperator.copy_sql_time.format(
-                    sink=self.table,
-                    source=s3_path,
-                    year=self.execution_date.strftime("%Y"),
-                    month=self.execution_date.strftime("%m"),
-                    id=credentials.access_key,
-                    secret=credentials.secret_key
-                )
-            else:
-                formatted_sql = S3ToRedshiftOperator.copy_sql.format(
-                    sink=self.table,
-                    source=s3_path,
-                    id=credentials.access_key,
-                    secret=credentials.secret_key
-                )
+    def execute(self, context) -> None:
+        postgres_hook = PostgresHook(postgres_conn_id=self.redshift_conn_id)
+        s3_hook = S3Hook(aws_conn_id=self.aws_conn_id, verify=self.verify)
+        credentials = s3_hook.get_credentials()
+        credentials_block = build_credentials_block(credentials)
+        copy_options = '\n\t\t\t'.join(self.copy_options)
+
+        copy_statement = self._build_copy_query(credentials_block, copy_options)
+
+        if self.truncate_table:
+            truncate_statement = f'TRUNCATE TABLE {self.schema}.{self.table};'
+            sql = f"""
+            BEGIN;
+            {truncate_statement}
+            {copy_statement}
+            COMMIT
+            """
         else:
-            formatted_sql = S3ToRedshiftOperator.copy_sql_JSON.format(
-                sink=self.table,
-                source=s3_path,
-                id=credentials.access_key,
-                secret=credentials.secret_key,
-                jsonpath="s3://{}/{}".format(self.s3_bucket, self.jsonPath)
-            )
-        redshift.run(formatted_sql)
+            sql = copy_statement
 
+        self.log.info('Executing COPY command...')
+        postgres_hook.run(sql, self.autocommit)
+        self.log.info("COPY command complete...")

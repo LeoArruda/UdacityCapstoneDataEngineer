@@ -8,7 +8,7 @@ class DataAnalysisOperator(BaseOperator):
     """
     DataAnalysisOperator runs example analytics queries against the database.
     """
-    ui_color = '#DA6959'
+    ui_color = '#deb709'
 
     @apply_defaults
     def __init__(self,

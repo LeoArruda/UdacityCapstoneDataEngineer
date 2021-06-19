@@ -3,13 +3,66 @@ class SqlQueries:
     This function hosts the various SQL queries used to perform tasks in Amazon Redshift.
     These queries create tables, copy data from S3 to Redshift, modify the data model and run data analysis tasks.
     """
+    drop_cab_types ='''DROP TABLE IF EXISTS cab_types'''
+    drop_fhv_bases ='''DROP TABLE IF EXISTS fhv_bases'''
+    drop_fhv_trips ='''DROP TABLE IF EXISTS fhv_trips'''
+    drop_fhv_trips_staging ='''DROP TABLE IF EXISTS fhv_trips_staging'''
+    drop_green_tripdata_staging ='''DROP TABLE IF EXISTS green_tripdata_staging'''
+    drop_hvfhs_license ='''DROP TABLE IF EXISTS hvfhs_licenses'''
+    drop_precipitation ='''DROP TABLE IF EXISTS precipitation'''
+    drop_stage_fhv ='''DROP TABLE IF EXISTS stage_fhv'''
+    drop_stage_fhvhv ='''DROP TABLE IF EXISTS stage_fhvhv'''
+    drop_stage_green ='''DROP TABLE IF EXISTS stage_green'''
+    drop_stage_yellow ='''DROP TABLE IF EXISTS stage_yellow'''
+    drop_taxi_rides ='''DROP TABLE IF EXISTS taxi_rides'''
+    drop_taxi_zones ='''DROP TABLE IF EXISTS taxi_zones'''
+    drop_time ='''DROP TABLE IF EXISTS time'''
+    drop_trips ='''DROP TABLE IF EXISTS trips'''
+    drop_uber_trips_2014 ='''DROP TABLE IF EXISTS uber_trips_2014'''
+    drop_yellow_tripdata_staging ='''DROP TABLE IF EXISTS yellow_tripdata_staging'''
+
+    drop_all_tables = [
+        drop_cab_types,
+        drop_fhv_bases,
+        drop_fhv_trips,
+        drop_fhv_trips_staging,
+        drop_green_tripdata_staging,
+        drop_hvfhs_license,
+        drop_precipitation,
+        drop_stage_fhv,
+        drop_stage_fhvhv,
+        drop_stage_green,
+        drop_stage_yellow,
+        drop_taxi_rides,
+        drop_taxi_zones,
+        drop_time,
+        drop_trips,
+        drop_uber_trips_2014,
+        drop_yellow_tripdata_staging
+    ]
+
     create_taxi_zones='''
-    CREATE TABLE IF NOT EXISTS public.taxi_zones (
-        locationid VARCHAR(255),
-        borough VARCHAR(255),
-        zone VARCHAR(255),
-        service_zone VARCHAR(255)
-    )
+        CREATE TABLE IF NOT EXISTS public.taxi_zones (
+            locationid VARCHAR(255),
+            borough VARCHAR(255),
+            zone VARCHAR(255),
+            service_zone VARCHAR(255)
+        )
+    '''
+
+    create_precipitation='''
+        CREATE TABLE IF NOT EXISTS public.precipitation (
+            station VARCHAR(255),
+            name VARCHAR(255),
+            date DATE,
+            awnd DECIMAL,
+            prcp DECIMAL,
+            snow DECIMAL,
+            snwd DECIMAL,
+            tavg DECIMAL,
+            tmax DECIMAL,
+            tmin DECIMAL
+        )
     '''
 
     create_stage_green = '''
@@ -84,6 +137,7 @@ class SqlQueries:
         '''
 
     create_stage_tables = [
+        create_precipitation,
         create_taxi_zones,
         create_stage_green,
         create_stage_yellow,
@@ -104,13 +158,14 @@ class SqlQueries:
 
     create_time_table = """
         CREATE TABLE IF NOT EXISTS time(
-            trip_timestamp  TIMESTAMP NOT NULL sortkey, 
+            trip_timestamp  TIMESTAMP NOT NULL sortkey,
             hour            INT, 
             day             INT, 
             week            INT, 
             month           INT, 
             year            INT, 
-            weekday         INT
+            weekday         INT,
+            datekey         INT
         );
     """
 
@@ -140,14 +195,15 @@ class SqlQueries:
     create_data_tables = [create_time_table, create_taxi_table]
 
     move_staging_time = '''
-        INSERT INTO public.time (trip_timestamp, hour, day, week, month, year, weekday)
+        INSERT INTO public.time (trip_timestamp, hour, day, week, month, year, weekday, datekey)
         SELECT 	to_date ({column}, 'YYYY-MM-DD HH24:MI:SS') as DT, 
                 extract(hour from DT), 
                 extract(day from DT), 
                 extract(week from DT), 
                 extract(month from DT), 
                 extract(year from DT), 
-                extract(dayofweek from DT)
+                extract(dayofweek from DT),
+                cast(to_char(DT, 'YYYYMMDD') as int)
         FROM public.{table}
     '''
 

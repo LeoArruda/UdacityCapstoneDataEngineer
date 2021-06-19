@@ -7,7 +7,7 @@ class LoadFactDimOperator(BaseOperator):
     """
     Operator that loads data from staging table to the fact table.
     """
-    ui_color = '#F98866'
+    ui_color = '#ffa98f'
 
     @apply_defaults
     def __init__(self,

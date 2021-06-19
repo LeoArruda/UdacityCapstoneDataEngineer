@@ -10,7 +10,7 @@ class RenderToS3Operator(BaseOperator):
     Operator that generates parquet files from raw data.
     """
 
-    ui_color = '#218251'
+    ui_color = '#3ca8fa'
 
     @apply_defaults
     def __init__(self,
@@ -40,7 +40,8 @@ class RenderToS3Operator(BaseOperator):
         """
         s3_hook = S3Hook(aws_conn_id=self.aws_connection_id)
         for data_folder in self.data_folders:
-            files = os.listdir('./data/processed-data/' + data_folder)
+            files = os.listdir(data_folder)
+            #files = os.listdir('./' + data_folder)
 
             for file_name in files:
                 self.log.info(
@@ -56,7 +57,7 @@ class RenderToS3Operator(BaseOperator):
                     delimiter='.')
                 if not check_for_file:
                     s3_hook.load_file(
-                        filename='./data/processed-data/{}/{}'.format(
+                        filename='{}/{}'.format(
                             data_folder, file_name),
                         key='{}/{}'.format(data_folder, file_name),
                         bucket_name=self.s3_bucket_name_prefix)
