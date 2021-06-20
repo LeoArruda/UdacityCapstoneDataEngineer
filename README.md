@@ -1,10 +1,7 @@
-# UdacityCapstoneDataEngineer
+# UDACITY CAPSTONE PROJECT : DATA ENGINEER NANO-DEGREE
 
 
-
-
-
-## Objective
+## OBJECTIVE
 
 The purpose of this project is to build an ETL pipeline that will be able to provide information to data analysts, and researchers about taxi rides and how it can be affected by weather, and to provide a database mechanism that enables queries, joins and analysis in a large volume of trip rides, hapenned in December of 2020. 
 
@@ -14,7 +11,7 @@ The datasets are ingested and transformed to an appropriate schema for analytics
 
 AWS Redshift is used because it is fast, with high performance and is horizontally scalable with massive storage capacity. For reference, it takes only 3 minutes in order to move the 15 million rows of the yellow rides from S3 to Redshift.
 
-## Project 
+## PROJECT 
 
 The New York City Taxi and Limousine Commission [(TLC)](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page), created in 1971, is the agency responsible for licensing and regulating New York City's Medallion (Yellow) taxi cabs, for-hire vehicles (community-based liveries, black cars and luxury limousines), commuter vans, and paratransit vehicles. 
 The TLC collects trip record information for each taxi and for-hire vehicle trip completed by our licensed drivers and vehicles. They receive taxi trip data from the technology service providers (TSPs) that provide electronic metering in each cab, and FHV trip data from the app, community livery, black car, or luxury limousine company, or base, who dispatched the trip. Over 200,000 TLC licensees complete approximately 1,000,000 trips each day.
@@ -22,17 +19,15 @@ The TLC collects trip record information for each taxi and for-hire vehicle trip
 Each trip is stored into the dataset as a single row. There are five major data sources that are used, dating from 2009 until present. To see more information, please check this [user guide](https://www1.nyc.gov/assets/tlc/downloads/pdf/trip_record_user_guide.pdf).
 
 
-## Data Sources
+## DATA SOURCES
 
 
 ![NYC-TLC](images/taxi_rides_dataset_page.png "Taxi Rides Site")
 [NYC-TLC](https://registry.opendata.aws/nyc-tlc-trip-records-pds/)
 
 ![NOAA](images/noaa_climate.png "NOAA Site")
-[Precipitation data](https://www.ncdc.noaa.gov/cdo-web/)
 
-
-
+[NOAA Weather Data](https://www.ncdc.noaa.gov/cdo-web/)
 
 
 ### Yellow Taxicabs
@@ -51,7 +46,14 @@ Commuter vans are vehicles that transport between 9 and 20 passengers in preappr
 Paratransit vehicles provide non-emergency transportation for passengers with disabilities. Paratransit vehicles are dispatched by paratransit bases.
 
 
-## Data Investigation
+
+## DATA MODEL
+
+![NYC Taxi & Precipitation](images/NYC_Taxi.png "Data Model")
+
+
+
+## DATA INVESTIGATION
 
 Due to the large data size, I'm using only the data from December 2020. Data for each taxi type is stored in a CSV file for each month in the 'trip data' folder. Information about the different taxi zones and borough maps are located in the 'misc' folder. A duplicate taxi zones table was uploaded to a public S3 bucket in JSON format with a representative manifest file for reading it into Redshift.
 A dataset containing weather information since 2015 and onward from a weather station located at the Central Park stored into a S3 folder as a JSON file. 
@@ -59,7 +61,7 @@ All that was done to meet the project specifications of multiple data source for
 
 The data required for this project is of very high quality, however minor cleaning needed to be done while reading data from S3 to Redshift. The trip data needed to be modified during the load step by including the following code in the query: delimiter ',' IGNOREBLANKLINES REMOVEQUOTES EMPTYASNULL. Secondly, a manifest file needed to be created to mediate loading of the taxi zones data and a second manifest file was needed to mediate the weather loading.
 
-## The steps necessary by the DAGs:
+## STEPS NECESSARY BY THE DAGs:
 
 - Staging tables are created using the PostgresOperator
 - A configured S3ToRedshiftOperator is used to move taxi zone data (JSON), weather precipitation data (JSON), and ride data (CSV) from S3 to redshift.
@@ -71,34 +73,42 @@ The data required for this project is of very high quality, however minor cleani
 - The data model allows ad hoc queries regarding the number and total income of each borough for taxis and is joined to avoid having to join the green and yellow taxi data at run time and weather. 
 - And finally, the model also included staging tables for fhv and fhvhv rides which can be queried to determine the number of rides per ride type per borough.
 
-### DAG: NYC_TLC_UPLOAD_FILES_DAG
+## DAG WORKFLOW
 
-### DAG: NYC_TLC_LOAD_DAG
+### DAG #1 : NYC_TLC_UPLOAD_FILES_DAG
+![NYC_TLC_UPLOAD_FILES_DAG](images/upload_files_dag.png "File Upload DAG")
 
-### DAG: NYC_TLC_RUN_MODELING_DAG
+### DAG #2 : NYC_TLC_LOAD_DAG
+![NYC_TLC_LOAD_DAG](images/load_dag.png "File load DAG")
 
-### How to run this project
+### DAG #3 : NYC_TLC_RUN_MODELING_DAG
+![NYC_TLC_RUN_MODELING_DAG](images/run_modeling_dag.png "Load Model DAG")
 
-1. Create an user on AWS
-2. Create an IAM role on AWS
+
+## HOW TO RUN THIS PROJECT
+
+1. Clone this project from [Github](https://github.com/LeoArruda/UdacityCapstoneDataEngineer)
+2. Create an user on AWS
+3. Create an IAM role on AWS
     * Attach the *AmazonS3ReadOnlyAccess* policy.
-3. Create a security group in the Amazon EC2 console with the following values:
+4. Create a security group in the Amazon EC2 console with the following values:
     * Type: *Custom TCP Rule*
     * Protocol: *TCP*
     * Port Range: *5439*
     * Source: select *Custom IP*, then type *0.0.0.0/0*
-4. Launch a redshift cluster using the *IAM role* and *security group* you defined previously.
+5. Launch a redshift cluster using the *IAM role* and *security group* you defined previously.
     * For this project, the recommended configuration is *dc2.large* cluster.
     * CPU: 8 EC2 compute units (2 virtual cores) per node
     * Memory: 15.25 GiB per node
     * Storage: 160-320 GB SSD per node
     * Cluster type: Single node   
-5. Create an *IAM user* to allow you to issue commands to both Redshift and S3
+6. Create an *IAM user* to allow you to issue commands to both Redshift and S3
     * Assign *programmatic access* with the following policies:
         * *AmazonRedshiftFullAccess*
         * *AmazonS3ReadOnlyAccess*
     * **Save your credentials** because it is only accessible at creation.
-6. Install Apache-Airflow and dependencies (requirements.txt)
+7. Install Apache-Airflow and dependencies (requirements.txt)
+    * Run: pip install -r requirements.txt
     * Run airflow:
         * airflow init
         * To start, I created the bash script: **start.sh**
@@ -108,24 +118,22 @@ The data required for this project is of very high quality, however minor cleani
     * On Airflow console, you must create the following *connections*:
         * *redshift*: a postgres connection with your cluster information, user and password.
         * *aws_credentials*: an Amazon connection with your IAM user key.
-7. An S3 bucket "udacity-data-lake" need to be created as of (18 June 2021) with the 'data/taxi_zones.json' file and 'data/taxi_paths.json' manifest. You also need to copy the 'data/precipitation.json' file and 'data/precipitation_paths.json' manifest. 
+8. An S3 bucket "udacity-data-lake" need to be created as of (18 June 2021) with the 'data/taxi_zones.json' file and 'data/taxi_paths.json' manifest. You also need to copy the 'data/precipitation.json' file and 'data/precipitation_paths.json' manifest. 
 
 
-## Results
+## RESULTS
 
-    - Querying dimension date
-![query_dim_date](images/query_dim_date.png "Query Dimension Date")
+- Querying the number of records
+![Number of Records](images/Records.png "Query Number of Records")
 
-    - Querying dimension location
-![query_dim_location](images/query_dim_location.png "Query Dimension Location")
 
-    - Querying fact COVID cases
-![query_fact_covid_cases](images/query_fact_covid_cases.png "Query Fact COVID")
-
-## Suggestion for data update frequency
+## SUGGESTIONS FOR THE DATA UPDATE FREQUENCY
 The data should be updated daily if possible, so that the star schema tables are always updated with the most recent data for a more accurate analysis. 
 
-## Possible Scenarios that may arise and how they can be handled.
+
+
+## POSSIBLE SCENARIOS THAT MAY ARISE AND HOW THEY CAN BE HANDLED.
+
 - If the data gets increased by 100x:
     - The increase of reads and writes to the database can be handled by increasing the number of compute nodes being used in the redshift cluster using elastic resize that can handle for more storage. 
     - Use of distkeys in case of a need to join the tables.
@@ -136,8 +144,12 @@ The data should be updated daily if possible, so that the star schema tables are
     - Utilizing elastic resize for better performance.
     - Utilizing Concurrency Scaling on Redshift by setting it to auto and allocating it's usage to specific user groups and workloads. This will boost query processing for an increasing amount of users.
 
-## Built With
+
+
+## BUILT WITH
 - Python 3.6, and Airflow 2.0.2
 
-## Author
-- Leo Arruda - [Github Profile](https://github.com/LeoArruda/UdacityCapstone)
+
+
+## AUTHOR
+- Leo Arruda - [Github Profile](https://github.com/LeoArruda/)

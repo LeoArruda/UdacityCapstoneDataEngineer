@@ -7,7 +7,7 @@ from airflow.utils.decorators import apply_defaults
 
 class RenderToS3Operator(BaseOperator):
     """
-    Operator that generates parquet files from raw data.
+    Operator that copy locally stored files to an specified S3 bucket.
     """
 
     ui_color = '#3ca8fa'

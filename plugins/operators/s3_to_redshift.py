@@ -6,6 +6,10 @@ from airflow.providers.amazon.aws.utils.redshift import build_credentials_block
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 class S3ToRedshiftOperator(BaseOperator):
+    """
+    S3ToRedshiftOperator runs a copy of data from files at Amazon S3 and
+    inserts into an specified table at Redshift.
+    """
     template_fields = ('s3_bucket', 's3_key', 'schema', 'table', 'column_list', 'copy_options')
     template_ext = ()
     ui_color = '#f0f2a0'

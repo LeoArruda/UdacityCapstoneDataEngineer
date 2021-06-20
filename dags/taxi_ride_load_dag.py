@@ -1,5 +1,5 @@
 """
-DAG is a compilation and arrangement of tasks to be run on a monthly basis.
+DAG #1: This DAG is a compilation and arrangement of tasks to copy local files to S3.
 """
 from datetime import datetime, timedelta
 import logging

@@ -5,8 +5,8 @@ import logging
 
 class DataQualityOperator(BaseOperator):
     """
-    DataQualityOperator runs probing SQL queries against the redshift database and evaluates the response to confirm
-    that data did in fact load into the queried table.
+    DataQualityOperator runs data check SQL queries against the redshift database
+    and evaluates the results to confirm that the data did in fact load into the queried table.
     """
     ui_color = '#09ded7'
 

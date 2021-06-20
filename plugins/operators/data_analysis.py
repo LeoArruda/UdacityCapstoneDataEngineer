@@ -6,7 +6,7 @@ import logging
 
 class DataAnalysisOperator(BaseOperator):
     """
-    DataAnalysisOperator runs example analytics queries against the database.
+    DataAnalysisOperator runs simple analytics queries against the database to cross and join the data inserted.
     """
     ui_color = '#deb709'
 

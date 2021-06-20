@@ -1,5 +1,6 @@
 """
-DAG is a compilation and arrangement of tasks to be run on a monthly basis.
+DAG #3: This DAG is a compilation and arrangement of tasks to insert data from staging table into 
+the Redshift fact and dimension tables.
 """
 from datetime import datetime, timedelta
 import logging

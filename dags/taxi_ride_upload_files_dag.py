@@ -1,4 +1,7 @@
-"""Main DAG file."""
+"""
+DAG #2: This DAG is a compilation and arrangement of tasks to copy data from files stored into an S3 bucket and
+insert it into the Redshift staging tables.
+"""
 import os
 import logging
 from datetime import datetime, timedelta
