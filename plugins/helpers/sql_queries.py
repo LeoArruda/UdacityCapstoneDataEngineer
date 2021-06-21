@@ -196,7 +196,7 @@ class SqlQueries:
 
     move_staging_time = '''
         INSERT INTO public.time (trip_timestamp, hour, day, week, month, year, weekday, datekey)
-        SELECT 	to_date ({column}, 'YYYY-MM-DD HH24:MI:SS') as DT, 
+        SELECT  to_timestamp ({column}, 'YYYY-MM-DD HH24:MI:SS') as DT, 
                 extract(hour from DT), 
                 extract(day from DT), 
                 extract(week from DT), 

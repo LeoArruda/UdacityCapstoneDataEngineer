@@ -1,43 +1,29 @@
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
-import logging
+
 
 class DataQualityOperator(BaseOperator):
-    """
-    DataQualityOperator runs data check SQL queries against the redshift database
-    and evaluates the results to confirm that the data did in fact load into the queried table.
-    """
-    ui_color = '#09ded7'
+
+    ui_color = '#89DA59'
 
     @apply_defaults
-    def __init__(self,
-                 conn_id='',
-                 target_tables=[],
-                 *args, **kwargs):
+    def __init__(self, checks, conn_id='redshift', *args, **kwargs):
 
-        super(DataQualityOperator, self).__init__(*args, **kwargs)
-        self.conn_id = conn_id
-        self.target_tables = target_tables
-        self.hook = PostgresHook(postgres_conn_id=self.conn_id)
+        super().__init__(*args, **kwargs)
+        self.redshift_conn_id = conn_id
+        self.checks = checks
 
     def execute(self, context):
-        self.log.info('Start of data checks...')
-        for table in self.target_tables:
-            records = self.hook.get_records(
-                "SELECT COUNT(*) FROM {}".format(table))
-            if len(records) < 1 or len(records[0]) < 1:
-                raise ValueError(
-                    "Data quality check failed. \
-                    {} returned no results".format(table))
-            num_records = records[0][0]
-
-            if num_records < 1:
-                self.log.info(
-                    "No records found in table {}!!".format(table))
-                raise ValueError(
-                    "No records found in table {}!".format(table))
-
-            self.log.info(
-                "Data quality on table {} \
-                check passed with {} records".format(table, num_records))
+        redshift = PostgresHook(postgres_conn_id=self.conn_id)
+        for sql, expected_result in self.checks:
+            result = redshift.get_first(sql)[0]
+            assert (
+                result == expected_result
+            ), f"""
+                Data quality check failed!
+                Query: {sql}
+                Expected result: {expected_result}
+                Actual result: {result}
+            """
+        self.log.info("All checks passed!")

@@ -1,8 +1,8 @@
 # UDACITY CAPSTONE PROJECT : DATA ENGINEER NANO-DEGREE
 
 
+<!-- OBJECTIVE-->
 ## OBJECTIVE
-
 The purpose of this project is to build an ETL pipeline that will be able to provide information to data analysts, and researchers about taxi rides and how it can be affected by weather, and to provide a database mechanism that enables queries, joins and analysis in a large volume of trip rides, hapenned in December of 2020. 
 
 The project extracts information from Ney York city taxi and limousine comission (TLC) Trip record dataset offered by AWS, and from NOAA National Oceanic and Atmospheric Administration the weather information.
@@ -11,14 +11,14 @@ The datasets are ingested and transformed to an appropriate schema for analytics
 
 AWS Redshift is used because it is fast, with high performance and is horizontally scalable with massive storage capacity. For reference, it takes only 3 minutes in order to move the 15 million rows of the yellow rides from S3 to Redshift.
 
-## PROJECT 
-
+<!-- PROJECT  -->
+## PROJECT
 The New York City Taxi and Limousine Commission [(TLC)](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page), created in 1971, is the agency responsible for licensing and regulating New York City's Medallion (Yellow) taxi cabs, for-hire vehicles (community-based liveries, black cars and luxury limousines), commuter vans, and paratransit vehicles. 
 The TLC collects trip record information for each taxi and for-hire vehicle trip completed by our licensed drivers and vehicles. They receive taxi trip data from the technology service providers (TSPs) that provide electronic metering in each cab, and FHV trip data from the app, community livery, black car, or luxury limousine company, or base, who dispatched the trip. Over 200,000 TLC licensees complete approximately 1,000,000 trips each day.
 
 Each trip is stored into the dataset as a single row. There are five major data sources that are used, dating from 2009 until present. To see more information, please check this [user guide](https://www1.nyc.gov/assets/tlc/downloads/pdf/trip_record_user_guide.pdf).
 
-
+<!-- DATA SOURCES -->
 ## DATA SOURCES
 
 
@@ -46,13 +46,16 @@ Commuter vans are vehicles that transport between 9 and 20 passengers in preappr
 Paratransit vehicles provide non-emergency transportation for passengers with disabilities. Paratransit vehicles are dispatched by paratransit bases.
 
 
-
+<!-- DATA MODEL -->
 ## DATA MODEL
+
+The Star Database Schema (Fact and Dimension Schema) is used for data modeling in this ETL pipeline. There is one fact table containing all the metrics (facts) associated to each tweet and five dimensions tables, containing associated information such as user, source etc. This model enables to search the database schema with the minimum number of *SQL JOIN*s possible and enable fast read queries. 
 
 ![NYC Taxi & Precipitation](images/NYC_Taxi.png "Data Model")
 
+Using this data model, we can finally answer questions regarding relationships between taxi rides, location and variance accordingly to the weather and precipitation in New York City.
 
-
+<!-- DATA INVESTIGATION -->
 ## DATA INVESTIGATION
 
 Due to the large data size, I'm using only the data from December 2020. Data for each taxi type is stored in a CSV file for each month in the 'trip data' folder. Information about the different taxi zones and borough maps are located in the 'misc' folder. A duplicate taxi zones table was uploaded to a public S3 bucket in JSON format with a representative manifest file for reading it into Redshift.
@@ -61,6 +64,7 @@ All that was done to meet the project specifications of multiple data source for
 
 The data required for this project is of very high quality, however minor cleaning needed to be done while reading data from S3 to Redshift. The trip data needed to be modified during the load step by including the following code in the query: delimiter ',' IGNOREBLANKLINES REMOVEQUOTES EMPTYASNULL. Secondly, a manifest file needed to be created to mediate loading of the taxi zones data and a second manifest file was needed to mediate the weather loading.
 
+<!-- STEPS NECESSARY BY THE DAGs -->
 ## STEPS NECESSARY BY THE DAGs:
 
 - Staging tables are created using the PostgresOperator
@@ -73,6 +77,21 @@ The data required for this project is of very high quality, however minor cleani
 - The data model allows ad hoc queries regarding the number and total income of each borough for taxis and is joined to avoid having to join the green and yellow taxi data at run time and weather. 
 - And finally, the model also included staging tables for fhv and fhvhv rides which can be queried to determine the number of rides per ride type per borough.
 
+<!-- APACHE AIRFLOW ORCHESTRATION -->
+## APACHE AIRFLOW ORCHESTRATION
+
+### DAG STRUCTURE
+
+The DAG parameters are set according to the following :
+
+- The DAG does not have dependencies on past runs
+- DAG has schedule interval set to daily
+- On failure, the task are retried 3 times
+- Retries happen every 5 minutes
+- Catchup is turned off
+- Email are not sent on retry
+
+<!-- DAG WORKFLOW -->
 ## DAG WORKFLOW
 
 ### DAG #1 : NYC_TLC_UPLOAD_FILES_DAG
@@ -84,7 +103,7 @@ The data required for this project is of very high quality, however minor cleani
 ### DAG #3 : NYC_TLC_RUN_MODELING_DAG
 ![NYC_TLC_RUN_MODELING_DAG](images/run_modeling_dag.png "Load Model DAG")
 
-
+<!-- HOW TO RUN THIS PROJECT -->
 ## HOW TO RUN THIS PROJECT
 
 1. Clone this project from [Github](https://github.com/LeoArruda/UdacityCapstoneDataEngineer)
@@ -120,36 +139,78 @@ The data required for this project is of very high quality, however minor cleani
         * *aws_credentials*: an Amazon connection with your IAM user key.
 8. An S3 bucket "udacity-data-lake" need to be created as of (18 June 2021) with the 'data/taxi_zones.json' file and 'data/taxi_paths.json' manifest. You also need to copy the 'data/precipitation.json' file and 'data/precipitation_paths.json' manifest. 
 
+<!-- DATA QUALITY CHECKS -->
+## DATA QUALITY CHECKS
 
+* Integrity checks
+
+  The relational database has integrity checks in place with the use of PRIMARY KEYs in fact and dimensional tables. These keys ensure that these values are UNIQUE and NOT NULL. The tables for Happiness Index and Temperature data have NOT NULL constraints for their entries - since we have already explored them and made sure that they are not NULL. The LOCATION attribute in the tweets table has the NOT NULL constraint since we intend to use that field for analytics. We cannot be stringent about the NULL values in other attributes of the tweets table since the data is dynamic and may have missing values in fields we do not require in this project.
+
+* Source/Count checks
+
+  Source count checks have been implemented in the Airflow DAGs using the CheckOperator and ValueCheckOperator. Since we already know the number of entries in the static datasets we could use the ValueCheckOperator to check all the entries have been inserted. Since we don't know the entries for dynamic tweet data we could use the CheckOperator to check any entries have been made to the table.
+
+
+
+### TOOLS AND TECHNOLOGIES USED
+
+* [python](https://www.python.org/)
+
+* [Apache Airflow](https://airflow.apache.org/) 
+
+  Apache Airflow is an open-source tool for orchestrating complex computational workflows and data processing pipelines. It is a platform to programmatically author, schedule, and monitor workflows. When workflows are defined as code, they become more maintainable, versionable, testable, and collaborative. We use Airflow to author workflows as directed acyclic graphs (DAGs) of tasks. The Airflow scheduler executes your tasks on an array of workers while following the specified dependencies. Rich command line utilities make performing complex surgeries on DAGs a snap. The rich user interface makes it easy to visualize pipelines running in production, monitor progress, and troubleshoot issues when needed.
+
+* [Amazon Web Services](https://aws.amazon.com/)
+
+  * [AWS S3](https://aws.amazon.com/s3/)
+
+    Amazon Simple Storage Service (Amazon S3) is an object storage service that offers industry-leading scalability, data availability, security, and performance. This means that we can use it to store and protect any amount of data for a range of use cases, such as big data analytics. Amazon S3 is designed for high of durability, and stores data for millions of applications for companies all around the world. In this project, we use this tool to store our static and dynamic datasets - acting as a data lake for our data. 
+
+  * [AWS Redshift](https://aws.amazon.com/redshift/)
+
+    Amazon Redshift is the most popular and fastest cloud data warehouse. Redshift is a fully-managed petabyte-scale cloud based data warehouse product designed for large scale data set storage and analysis. It is also used to perform large scale database migrations. Redshift’s column-oriented database is designed to connect to SQL-based clients and business intelligence tools, making data available to users in real time. In this project, we use this tool to warehouse our data so that we could easily scale it when necessary. 
+
+
+
+<!-- RESULTS -->
 ## RESULTS
 
 - Querying the number of records
 ![Number of Records](images/Records.png "Query Number of Records")
 
 
+<!-- SUGGESTIONS -->
 ## SUGGESTIONS FOR THE DATA UPDATE FREQUENCY
 The data should be updated daily if possible, so that the star schema tables are always updated with the most recent data for a more accurate analysis. 
 
 
+<!-- WHAT IF -->
+## WHAT IF?
 
-## POSSIBLE SCENARIOS THAT MAY ARISE AND HOW THEY CAN BE HANDLED.
+This section discusses strategies to deal with the following three key scenarios:
 
-- If the data gets increased by 100x:
-    - The increase of reads and writes to the database can be handled by increasing the number of compute nodes being used in the redshift cluster using elastic resize that can handle for more storage. 
-    - Use of distkeys in case of a need to join the tables.
-    - Compress the s3 data.
-- If the pipelines were needed to be run on a daily basis by 7am:
-    - dags can be scheduled to run daily by setting the start_date config as a datetime value containing both the date and time when it should start running, then setting schedule_interval to @daily which will ensure the dag runs everyday at the time provided in start_date.
-- If the database needed to be accessed by 100+ people:
-    - Utilizing elastic resize for better performance.
-    - Utilizing Concurrency Scaling on Redshift by setting it to auto and allocating it's usage to specific user groups and workloads. This will boost query processing for an increasing amount of users.
+1. Data is increased 100x. 
+2. Data pipeline is run on daily basis by 7 am every day.
+3. Database needs to be accessed by 100+ users simultaneously.
+
+### 1. Data is increased 100x
+
+In this project we have used scalable, fully managed cloud services to store and process our data throughout. As mentioned earlier, we can easily scale our resources vertically or horizontally with few clicks to tackle this scenario. Increased resources for AWS Redshift would allow us to load larger static datasets faster. For the increased volume of streaming tweet data, we could either upload the tweets in batches rather than individually or use multiple AWS Kinesis delivery streams to ingest data parallely.
+
+### 2. Data pipeline is run on a daily basis by 7 am every day
+
+As the static datasets do not change on a daily basis, the major challenge here is to process the a day's amount of captured tweets in an acceptable time. AWS Kinesis stores the data in AWS S3 partitioned by yearly/monthly/daily/hourly blocks. This makes it easy to run tasks in parallel DAGs with reduced data volume. Hence, the entire data could be processed within the stipulated time.
+
+### 3. Database needs to be accessed by 100+ users simultaneously
+
+We are using cloud based services, which can be easily given access to the 100+ users. To improve the performance, we need more CPU resources with increased user count. Using a distributed database, we can to improve oour replications and partitioning to get faster query results for each user. If a group of users work on a specific subset of data or have an expensive query, we can also explore creating duplicate tables for them (if possible). 
 
 
-
+<!-- BUILT WITH -->
 ## BUILT WITH
 - Python 3.6, and Airflow 2.0.2
 
 
-
+<!-- AUTHOR -->
 ## AUTHOR
 - Leo Arruda - [Github Profile](https://github.com/LeoArruda/)

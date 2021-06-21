@@ -17,5 +17,6 @@ class UdacityPlugin(AirflowPlugin):
         operators.LoadFactDimOperator,
     ]
     helpers = [
-        helpers.SqlQueries
+        helpers.SqlQueries,
+        helpers.DataValidationQueries,
     ]

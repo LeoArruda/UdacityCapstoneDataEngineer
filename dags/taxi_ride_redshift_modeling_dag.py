@@ -9,7 +9,7 @@ from airflow import DAG
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.providers.amazon.aws.operators.s3_copy_object import S3CopyObjectOperator
-from helpers import SqlQueries
+from helpers import SqlQueries, DataValidationQueries
 from operators import DataQualityOperator, DataAnalysisOperator
 
 LOCAL_DIR='/Users/leandroarruda/Codes/UdacityCapstoneDEng/data/'
@@ -72,15 +72,51 @@ populate_ride_tables = PostgresOperator(
     autocommit=True
 )
 
-data_modeling_quality_checks = DataQualityOperator(
-    task_id='Model_data_quality_checks',
+start_quality_ckecks = DummyOperator(task_id='Start_Quality_Checks',  dag=dag)
+end_quality_ckecks = DummyOperator(task_id='End_Quality_Checks',  dag=dag)
+
+data_quality_integrity_checks = DataQualityOperator(
+    task_id='Data_Quality_Integrity_Check',
     dag=dag,
     conn_id="redshift",
-    target_tables=[
-        'time',
-        'taxi_rides'
-    ]
+    checks=[
+        (DataValidationQueries.data_in_taxi_rides_unique_integrity, 1),
+        (DataValidationQueries.data_in_precipitation_unique_integrity, 1),
+        (DataValidationQueries.data_in_taxi_zones_unique_integrity, 1),
+    ],
 )
+
+data_quality_unit_checks = DataQualityOperator(
+    task_id='Data_Quality_Unit_Check',
+    dag=dag,
+    conn_id="redshift",
+    checks=[
+        (DataValidationQueries.unit_test_in_time_table, True),
+        (DataValidationQueries.unit_test_in_taxi_rides_and_time_tables, True),
+    ],
+)
+
+data_quality_source_count_checks = DataQualityOperator(
+    task_id='Data_Quality_Source_Count_Check',
+    dag=dag,
+    conn_id="redshift",
+    checks=[
+        (DataValidationQueries.data_in_taxi_rides_table_count, True),
+        (DataValidationQueries.data_in_taxi_zones_table_count, True),
+        (DataValidationQueries.data_in_time_table_count, True),
+        (DataValidationQueries.data_in_precipitation_table_count, True),
+    ],
+)
+
+# data_modeling_quality_checks = DataQualityOperator(
+#     task_id='Model_data_quality_checks',
+#     dag=dag,
+#     conn_id="redshift",
+#     target_tables=[
+#         'time',
+#         'taxi_rides'
+#     ]
+# )
 
 data_analytics_queries = DataAnalysisOperator(
     task_id='Data_Analytics',
@@ -91,9 +127,10 @@ data_analytics_queries = DataAnalysisOperator(
 
 end_modeling = DummyOperator(task_id='Finish_modeling_Redshift',  dag=dag)
 
-
 start_modeling >> [prepare_stage_tables, setup_and_create_data_tables] >> modeling
 
-modeling >> [populate_time_table, populate_ride_tables] >> data_modeling_quality_checks
+modeling >> [populate_time_table, populate_ride_tables] >> start_quality_ckecks
 
-data_modeling_quality_checks >> data_analytics_queries >> end_modeling
+start_quality_ckecks >> [data_quality_integrity_checks, data_quality_unit_checks, data_quality_source_count_checks] >> end_quality_ckecks
+
+end_quality_ckecks >> data_analytics_queries >> end_modeling
