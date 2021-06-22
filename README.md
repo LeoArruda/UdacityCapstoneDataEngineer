@@ -16,7 +16,7 @@
 12. [RESULTS](#results)
 13. [SAMPLE QUERY](#sample-query)
 14. [SUGGESTIONS FOR THE DATA UPDATE FREQUENCY](#suggestions-for-the-data-update-frequency)
-15. [WHAT IF?](#what-if?)
+15. [WHAT IF](#what-if)
 16. [BUILT WITH](#built-with)
 17. [AUTHOR](#author)
 
