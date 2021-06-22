@@ -1,5 +1,24 @@
 # UDACITY CAPSTONE PROJECT : DATA ENGINEER NANO-DEGREE
 
+## TABLE OF CONTENTS
+
+1. [OBJECTIVE](##OBJECTIVE)
+2. [PROJECT](##PROJECT)
+3. [DATA SOURCES](##DATA-SOURCES)
+4. [DATA MODEL](##DATA-MODEL)
+5. [DATA DICTIONARY](##DATA-DICTIONARY)
+6. [DATA INVESTIGATION](##DATA-INVESTIGATION)
+7. [STEPS NECESSARY BY THE DAGs](##STEPS-NECESSARY-BY-THE-DAGs)
+8. [APACHE AIRFLOW ORCHESTRATION](##APACHE-AIRFLOW-ORCHESTRATION)
+9. [DAG WORKFLOW](##DAG-WORKFLOW)
+10. [HOW TO RUN THIS PROJECT](##HOW-TO-RUN-THIS-PROJECT)
+11. [DATA QUALITY CHECKS](##DATA-QUALITY-CHECKS)
+12. [RESULTS](##RESULTS)
+13. [SAMPLE QUERY](##SAMPLE-QUERY)
+14. [SUGGESTIONS FOR THE DATA UPDATE FREQUENCY](##SUGGESTIONS-FOR-THE-DATA-UPDATE-FREQUENCY)
+15. [WHAT IF?](##WHAT-IF?)
+16. [BUILT WITH](##BUILT-WITH)
+17. [AUTHOR](##AUTHOR)
 
 <!-- OBJECTIVE-->
 ## OBJECTIVE
@@ -72,7 +91,7 @@ All that was done to meet the project specifications of multiple data source for
 The data required for this project is of very high quality, however minor cleaning needed to be done while reading data from S3 to Redshift. The trip data needed to be modified during the load step by including the following code in the query: delimiter ',' IGNOREBLANKLINES REMOVEQUOTES EMPTYASNULL. Secondly, a manifest file needed to be created to mediate loading of the taxi zones data and a second manifest file was needed to mediate the weather loading.
 
 <!-- STEPS NECESSARY BY THE DAGs -->
-## STEPS NECESSARY BY THE DAGs:
+## STEPS NECESSARY BY THE DAGs
 
 - Staging tables are created using the PostgresOperator
 - A configured S3ToRedshiftOperator is used to move taxi zone data (JSON), weather precipitation data (JSON), and ride data (CSV) from S3 to redshift.
