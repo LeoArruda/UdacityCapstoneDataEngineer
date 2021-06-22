@@ -261,15 +261,20 @@ This section discusses strategies to deal with the following three key scenarios
 
 ### 1. Data is increased 100x
 
-In this project we have used scalable, fully managed cloud services to store and process our data throughout. As mentioned earlier, we can easily scale our resources vertically or horizontally with few clicks to tackle this scenario. Increased resources for AWS Redshift would allow us to load larger static datasets faster. For the increased volume of streaming tweet data, we could either upload the tweets in batches rather than individually or use multiple AWS Kinesis delivery streams to ingest data parallely.
+In this project, I used scalable and fully managed cloud services to store and process our data. As mentioned earlier, we can quickly scale our resources vertically or horizontally with a few clicks to handle this scenario. Increasing capabilities for AWS Redshift would allow us to load 100 times larger datasets faster. We can upload taxi rides in daily batches instead of monthly packages for the highest volume of taxi ride data.
+
 
 ### 2. Data pipeline is run on a daily basis by 7 am every day
 
-As the static datasets do not change on a daily basis, the major challenge here is to process the a day's amount of captured tweets in an acceptable time. AWS Kinesis stores the data in AWS S3 partitioned by yearly/monthly/daily/hourly blocks. This makes it easy to run tasks in parallel DAGs with reduced data volume. Hence, the entire data could be processed within the stipulated time.
+Taxi ride datasets increase daily; the most significant challenge here is loading and processing the number of trips logged for the day at an acceptable time. An entire month of data containing 1.5 Million records passed through the data pipeline in less than 6 minutes of execution in testing. Demonstrating that Apache Airflow is an excellent orchestrator, the project's architecture, especially AWS S3 is extremely fast.
+If the data pipeline were executed daily at 7 am, the solution developed in this project would accommodate perfectly. I have an estimated execution time of fewer than 6 minutes.
+In the future, in a scenario where this time increases to an inadequate value, we could adopt a distribution of data in Year / Month / Day in AWS S3, which would help both storage and read performance, enabling the execution of parallel DAGs with reduced data volume by DAG.
 
 ### 3. Database needs to be accessed by 100+ users simultaneously
 
-We are using cloud based services, which can be easily given access to the 100+ users. To improve the performance, we need more CPU resources with increased user count. Using a distributed database, we can to improve oour replications and partitioning to get faster query results for each user. If a group of users work on a specific subset of data or have an expensive query, we can also explore creating duplicate tables for them (if possible). 
+We are using cloud-based services, which can quickly access more than 100 users. To improve performance, we need more CPU resources with a higher user count.
+Regarding the data architecture built, it could still be optimized with the adoption of new data partitioning and sort strategies, thus optimizing the read time.
+It would also be possible for us to adopt distributed database. We can improve replication and partitioning to get faster query results for each user. If a group of users work on a specific subset of data or have an expensive query, we can also explore creating duplicate tables for them.
 
 
 <!-- BUILT WITH -->
