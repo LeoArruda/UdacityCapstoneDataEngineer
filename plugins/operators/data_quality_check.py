@@ -11,7 +11,7 @@ class DataQualityOperator(BaseOperator):
     def __init__(self, checks, conn_id='redshift', *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.redshift_conn_id = conn_id
+        self.conn_id = conn_id
         self.checks = checks
 
     def execute(self, context):

@@ -55,6 +55,13 @@ The Star Database Schema (Fact and Dimension Schema) is used for data modeling i
 
 Using this data model, we can finally answer questions regarding relationships between taxi rides, location and variance accordingly to the weather and precipitation in New York City.
 
+
+<!-- DATA DICTIONARY -->
+## DATA DICTIONARY
+The data dictionary [DATADICT](DATADICT.md) contains a description of every attribute for all tables listed above.
+
+
+
 <!-- DATA INVESTIGATION -->
 ## DATA INVESTIGATION
 
@@ -98,10 +105,10 @@ The DAG parameters are set according to the following :
 ![NYC_TLC_UPLOAD_FILES_DAG](images/upload_files_dag.png "File Upload DAG")
 
 ### DAG #2 : NYC_TLC_LOAD_DAG
-![NYC_TLC_LOAD_DAG](images/load_dag.png "File load DAG")
+![NYC_TLC_LOAD_DAG](images/tlc_load_dag.png "File load DAG")
 
 ### DAG #3 : NYC_TLC_RUN_MODELING_DAG
-![NYC_TLC_RUN_MODELING_DAG](images/run_modeling_dag.png "Load Model DAG")
+![NYC_TLC_RUN_MODELING_DAG](images/run_tlc_modeling_dag.png "Load Model DAG")
 
 <!-- HOW TO RUN THIS PROJECT -->
 ## HOW TO RUN THIS PROJECT
@@ -150,11 +157,15 @@ The DAG parameters are set according to the following :
 
   Source count checks have been implemented in the Airflow DAGs using the CheckOperator and ValueCheckOperator. Since we already know the number of entries in the static datasets we could use the ValueCheckOperator to check all the entries have been inserted. Since we don't know the entries for dynamic tweet data we could use the CheckOperator to check any entries have been made to the table.
 
+* Unit checks
+
+  Unit tests to validate that some unit of the software code performs as expected. I'm testing some calculations are producing the expected results.
+
 
 
 ### TOOLS AND TECHNOLOGIES USED
 
-* [python](https://www.python.org/)
+* [Python](https://www.python.org/)
 
 * [Apache Airflow](https://airflow.apache.org/) 
 
@@ -177,6 +188,42 @@ The DAG parameters are set according to the following :
 
 - Querying the number of records
 ![Number of Records](images/Records.png "Query Number of Records")
+
+<!-- SAMPLE -->
+## SAMPLE QUERY
+
+The following query is a sample of the analytical analysis used to retrieve the number of taxi trips, when pickup location was Newark Airport, happened during the 50th week of 2020. The query also returns temperature and the precipitation level.
+
+```
+{
+  SELECT count(*) as trips, TR.vendorid, TZ.zone, TI.day, TI.month, TI.year, PR.prcp, PR.tmax, PR.tmin 
+  FROM taxi_rides as TR
+  JOIN taxi_zones as TZ 
+    ON TR.pulocationid = TZ.locationid
+  JOIN time as TI
+    ON TR.pickup_datetime = TI.trip_timestamp
+  JOIN precipitation as PR
+      ON TI.datekey = PR.datekey
+  WHERE pulocationid = 1
+  AND TI.week = 50
+  GROUP BY TR.vendorid, TZ.zone, TI.day, TI.month, TI.year, PR.prcp, PR.tmax, PR.tmin;
+}
+```
+
+The result expected is:
+
+| trips | vendorid | zone | day | month | year | prcp | tmax | tmin |
+| ----- | -------- | --------------- | -- | ----- | ---- | ---- | ---- | ---- |
+| 2	| 2	| Newark Airport	| 8	| 12	| 2020	| 0	| 36	| 30 |
+| 1	| 1	| Newark Airport	| 10	| 12	| 2020	| 0	| 49	| 36 |
+| 2	| 2	| Newark Airport	| 11	| 12	| 2020	| 0	| 57	| 39 |
+| 1	| 2	| Newark Airport	| 7	| 12	| 2020	| 0	| 40	| 32 |
+| 1	| 2	| Newark Airport	| 10	| 12	| 2020	| 0	| 49	| 36 |
+| 2	| 1	| Newark Airport	| 13	| 12	| 2020	| 0	| 62	| 47 |
+| 2	| 1	| Newark Airport	| 11	| 12	| 2020	| 0	| 57	| 39 |
+| 1	| 2	| Newark Airport	| 12	| 12	| 2020	| 0	| 58	| 46 |
+
+
 
 
 <!-- SUGGESTIONS -->

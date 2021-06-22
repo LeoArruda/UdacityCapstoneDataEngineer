@@ -51,6 +51,30 @@ setup_and_create_data_tables = PostgresOperator(
     autocommit=True
 )
 
+prepare_datekey_data_tables = PostgresOperator(
+    dag=dag,
+    task_id='prepare_datekey_data_tables',
+    postgres_conn_id='redshift',
+    sql=SqlQueries.alter_tables_datekey,
+    autocommit=True
+)
+
+update_datekey_data_tables = PostgresOperator(
+    dag=dag,
+    task_id='update_datekey_data_tables',
+    postgres_conn_id='redshift',
+    sql=SqlQueries.insert_into_tables_datekey,
+    autocommit=True
+)
+
+update_datekey_precipitation_table = PostgresOperator(
+    dag=dag,
+    task_id='update_datekey_precipitation_table',
+    postgres_conn_id='redshift',
+    sql=SqlQueries.alter_precipitation_table_datekey,
+    autocommit=True
+)
+
 modeling = DummyOperator(
     task_id='Join_Modeling',
     dag=dag
@@ -127,9 +151,11 @@ data_analytics_queries = DataAnalysisOperator(
 
 end_modeling = DummyOperator(task_id='Finish_modeling_Redshift',  dag=dag)
 
-start_modeling >> [prepare_stage_tables, setup_and_create_data_tables] >> modeling
+start_modeling >> [prepare_stage_tables, setup_and_create_data_tables] >> prepare_datekey_data_tables
 
-modeling >> [populate_time_table, populate_ride_tables] >> start_quality_ckecks
+prepare_datekey_data_tables >> [update_datekey_data_tables, update_datekey_precipitation_table] >> modeling
+
+modeling >> [populate_ride_tables, populate_time_table] >> start_quality_ckecks
 
 start_quality_ckecks >> [data_quality_integrity_checks, data_quality_unit_checks, data_quality_source_count_checks] >> end_quality_ckecks
 

@@ -188,15 +188,51 @@ class SqlQueries:
             improvement_surcharge   DECIMAL,
             total_amount            DECIMAL,
             payment_type            VARCHAR,
-            congestion_surcharge    DECIMAL
+            congestion_surcharge    DECIMAL,
+            pickup_datekey          INT,
+            dropoff_datekey         INT
         );
     """
 
     create_data_tables = [create_time_table, create_taxi_table]
 
+    alter_stage_add_pickup_datekey = ''' 
+        ALTER TABLE public.{table}
+        ADD COLUMN pickup_datekey INT DEFAULT NULL
+    '''
+
+    alter_stage_add_dropoff_datekey = ''' 
+        ALTER TABLE public.{table}
+        ADD COLUMN dropoff_datekey INT DEFAULT NULL
+    '''
+
+    alter_tables_datekey = [
+        alter_stage_add_pickup_datekey.format(table='stage_green'),
+        alter_stage_add_dropoff_datekey.format(table='stage_green'),
+        alter_stage_add_pickup_datekey.format(table='stage_yellow'),
+        alter_stage_add_dropoff_datekey.format(table='stage_yellow')
+    ]
+
+    alter_stage_insert_pickup_datekey = ''' 
+        UPDATE public.{table}
+        SET pickup_datekey = CAST(to_char(to_date(pickup_datetime, 'YYYY-MM-DD'), 'YYYYMMDD') as int);
+    '''
+
+    alter_stage_insert_dropoff_datekey = ''' 
+        UPDATE public.{table}
+        SET dropoff_datekey = CAST(to_char(to_date(dropoff_datetime, 'YYYY-MM-DD'), 'YYYYMMDD') as int);
+    '''
+
+    insert_into_tables_datekey = [
+        alter_stage_insert_pickup_datekey.format(table='stage_green'),
+        alter_stage_insert_dropoff_datekey.format(table='stage_green'),
+        alter_stage_insert_pickup_datekey.format(table='stage_yellow'),
+        alter_stage_insert_dropoff_datekey.format(table='stage_yellow')
+    ]
+    
     move_staging_time = '''
         INSERT INTO public.time (trip_timestamp, hour, day, week, month, year, weekday, datekey)
-        SELECT  to_timestamp ({column}, 'YYYY-MM-DD HH24:MI:SS') as DT, 
+        SELECT  DISTINCT to_timestamp ({column}, 'YYYY-MM-DD HH24:MI:SS') as DT, 
                 extract(hour from DT), 
                 extract(day from DT), 
                 extract(week from DT), 
@@ -208,10 +244,22 @@ class SqlQueries:
     '''
 
     move_time_data = [
-        move_staging_time.format(table='stage_green', column='pickup_datetime'),
-        move_staging_time.format(table='stage_green', column='dropoff_datetime'),
-        move_staging_time.format(table='stage_yellow', column='pickup_datetime'),
-        move_staging_time.format(table='stage_yellow', column='dropoff_datetime')
+        move_staging_time.format(table='taxi_rides', column='pickup_datetime')
+    ]
+
+    alter_precipitation_add_datekey = ''' 
+        ALTER TABLE public.{table}
+        ADD COLUMN datekey INT DEFAULT NULL
+    '''
+
+    alter_precipitation_insert_datekey = '''
+        UPDATE public.{table}
+        SET datekey = CAST(to_char(date, 'YYYYMMDD') as int);
+    '''
+
+    alter_precipitation_table_datekey = [
+        alter_precipitation_add_datekey.format(table='precipitation'),
+        alter_precipitation_insert_datekey.format(table='precipitation'),
     ]
 
     move_staging__taxi = '''
@@ -224,21 +272,22 @@ class SqlQueries:
         move_staging__taxi.format(table='stage_yellow')
     ]
 
+
     analyse_location = '''
-        select 
+        SELECT 
             zones.borough,
             sum(rides.total_amount) as total
-        from 
+        FROM 
             public.taxi_rides as rides
-        join
+        JOIN
             public.taxi_zones as zones
-            on
+            ON
                 rides.{locationColumn} = zones.locationid
-        group by
+        GROUP BY
             zones.borough
-        order by
+        ORDER BY
             total DESC
-        limit 
+        LIMIT 
             10
         ;
     '''

@@ -9,7 +9,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.providers.amazon.aws.operators.s3_copy_object import S3CopyObjectOperator
 from helpers import SqlQueries
-from operators import S3ToRedshiftOperator, DataQualityOperator, DataAnalysisOperator, RenderToS3Operator
+from operators import S3ToRedshiftOperator, DataQualityOperator
 
 LOCAL_DIR='/Users/leandroarruda/Codes/UdacityCapstoneDEng/data/'
 
@@ -118,18 +118,18 @@ task_fhvhv_s3_to_redshift = S3ToRedshiftOperator(
     task_id='transfer_fhvhv_s3_to_redshift',
 )
 
-task_redshift_initial_data_quality = DataQualityOperator(
-    task_id='task_redshift_staging_data_quality',
-    dag=dag,
-    conn_id='redshift',
-    target_tables=[
-        'taxi_zones',
-        'stage_green',
-        'stage_yellow',
-        'stage_fhv',
-        'stage_fhvhv'
-    ]
-)
+# task_redshift_initial_data_quality = DataQualityOperator(
+#     task_id='task_redshift_staging_data_quality',
+#     dag=dag,
+#     conn_id='redshift',
+#     target_tables=[
+#         'taxi_zones',
+#         'stage_green',
+#         'stage_yellow',
+#         'stage_fhv',
+#         'stage_fhvhv'
+#     ]
+# )
 
 end_load = DummyOperator(
     task_id='Load_from_S3_to_Redshift_End',  dag=dag)
@@ -143,6 +143,4 @@ finish_tables >> start_load
 
 start_load >> [task_taxi_zones_s3_to_redshift, task_precipitation_s3_to_redshift, task_green_s3_to_redshift, task_yellow_s3_to_redshift, task_fhv_s3_to_redshift, task_fhvhv_s3_to_redshift ] 
 
-[task_taxi_zones_s3_to_redshift, task_precipitation_s3_to_redshift, task_green_s3_to_redshift, task_yellow_s3_to_redshift, task_fhv_s3_to_redshift, task_fhvhv_s3_to_redshift ]  >> task_redshift_initial_data_quality
-
-task_redshift_initial_data_quality >> end_load
+[task_taxi_zones_s3_to_redshift, task_precipitation_s3_to_redshift, task_green_s3_to_redshift, task_yellow_s3_to_redshift, task_fhv_s3_to_redshift, task_fhvhv_s3_to_redshift ] >> end_load
